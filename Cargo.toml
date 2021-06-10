@@ -14,6 +14,6 @@ crate-type = ["lib"]
 
 [dependencies]
 anyhow = "1.0.40"
-cmd_lib = "1.0.13"
 downloader = { version = "0.2.6", features = ["tui", "verify"] }
+log = "0.4.14"
 simplelog = "0.10.0"
