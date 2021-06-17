@@ -1,12 +1,14 @@
-use std::path::Path;
+use std::{path::Path, process::Command};
 
-pub use ::downloader::{download, downloader, progress, verify, Downloader};
 pub use anyhow::*;
 pub use log::*;
-pub use simplelog;
+
+#[cfg(feature = "logger")]
 use simplelog::{ColorChoice, ConfigBuilder, LevelFilter, TermLogger, TerminalMode};
 
-pub fn init() {
+/// Initialize a terminal logger with color support.
+#[cfg(feature = "logger")]
+pub fn init_logger() {
     TermLogger::init(
         LevelFilter::Trace,
         ConfigBuilder::default()
@@ -19,35 +21,13 @@ pub fn init() {
     .unwrap();
 }
 
-pub trait DownloadExt {
-    /// Download the files into the `download_folder`.
-    fn download_to(&self, download_folder: impl AsRef<Path>) -> Result<()>;
-
-    /// Download the files into the current directory.
-    fn download(&self) -> Result<()> {
-        self.download_to(std::env::current_dir()?)
-    }
-}
-
-impl DownloadExt for [(&str, Option<&str>)] {
-    fn download_to(&self, download_folder: impl AsRef<Path>) -> Result<(), Error> {
-        let mut downloader = Downloader::builder()
-            .download_folder(download_folder.as_ref())
-            .build()?;
-
-        let downloads = self
-            .iter()
-            .map(|(url, opt_filename)| {
-                let mut d = download::Download::new(url);
-                if let Some(filename) = opt_filename {
-                    d = d.file_name(filename.as_ref());
-                }
-                d
-            })
-            .collect::<Vec<_>>();
-
-        downloader.download(&downloads)?;
-
-        Ok(())
-    }
+/// Download `url` to `file_path` using curl.
+/// 
+/// Note: Curl must be installed an in the path.
+pub fn download_file(url: impl Into<String>, file_path: impl AsRef<Path>) -> Result<()> {
+    let url = format!("\"{}\"", url.into());
+    let file_path = format!("\"{}\"", file_path.as_ref().display());
+    let args = ["-o", &file_path, &url];
+    Command::new("curl").args(&args).spawn()?.wait()?;
+    Ok(())
 }
